@@ -1,7 +1,7 @@
 {
   "domain": "emotionair",
   "name": "EmotionAir OTA",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "documentation": "https://github.com/StarStarDust/Multi-sensor",
   "issue_tracker": "https://github.com/StarStarDust/Multi-sensor/issues",
   "dependencies": [],
