@@ -6,6 +6,7 @@ import os
 import asyncio
 from datetime import timedelta
 
+import yaml
 import aiohttp
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
@@ -31,6 +32,9 @@ FIRMWARE_EXTENSION = ".zigbee"
 # ZHA OTA 固件存放目录
 OTA_DIR = "/config/zigpy_ota"
 
+# HA 配置文件路径
+CONFIGURATION_YAML = "/config/configuration.yaml"
+
 # 默认检查间隔（小时）
 DEFAULT_CHECK_INTERVAL = 6
 
@@ -43,6 +47,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     # 确保 OTA 目录存在
     await hass.async_add_executor_job(_ensure_ota_dir)
+
+    # 自动配置 ZHA 的 OTA 目录（修改 configuration.yaml）
+    await hass.async_add_executor_job(_ensure_zha_ota_config)
 
     # 定义固件检查和下载函数
     async def check_and_download_firmware(_=None):
@@ -168,3 +175,89 @@ def _write_firmware(path: str, data: bytes):
     """Write firmware data to file."""
     with open(path, "wb") as f:
         f.write(data)
+
+
+def _ensure_zha_ota_config():
+    """Ensure ZHA is configured to use the OTA directory.
+
+    Uses the new `extra_providers` format with `type: advanced`.
+    The `warning` field is required by zigpy and must match exactly.
+    The user needs to restart HA once for ZHA to pick up the change.
+    """
+    # zigpy 要求的固定警告字符串，必须一字不差
+    REQUIRED_WARNING = (
+        "I understand I can *destroy* my devices by enabling OTA updates"
+        " from files. Some OTA updates can be mistakenly applied to the"
+        " wrong device, breaking it. I am consciously using this at my"
+        " own risk."
+    )
+
+    try:
+        # 读取现有配置
+        config = {}
+        if os.path.exists(CONFIGURATION_YAML):
+            with open(CONFIGURATION_YAML, "r", encoding="utf-8") as f:
+                config = yaml.safe_load(f) or {}
+
+        # 检查是否已经配置了 advanced provider 指向我们的 OTA 目录
+        zha_config = config.get("zha", {})
+        zigpy_config = zha_config.get("zigpy_config", {})
+        ota_config = zigpy_config.get("ota", {})
+        extra_providers = ota_config.get("extra_providers", [])
+
+        # 检查是否已存在指向 OTA_DIR 的 advanced provider
+        for provider in extra_providers:
+            if (
+                provider.get("type") == "advanced"
+                and provider.get("path") == OTA_DIR
+            ):
+                _LOGGER.debug(
+                    "EmotionAir OTA: ZHA OTA advanced provider 已配置，无需修改"
+                )
+                return
+
+        # 构建新的 advanced provider 配置
+        new_provider = {
+            "type": "advanced",
+            "path": OTA_DIR,
+            "warning": REQUIRED_WARNING,
+        }
+
+        # 确保配置路径存在
+        if "zha" not in config:
+            config["zha"] = {}
+        if "zigpy_config" not in config["zha"]:
+            config["zha"]["zigpy_config"] = {}
+        if "ota" not in config["zha"]["zigpy_config"]:
+            config["zha"]["zigpy_config"]["ota"] = {}
+        if "extra_providers" not in config["zha"]["zigpy_config"]["ota"]:
+            config["zha"]["zigpy_config"]["ota"]["extra_providers"] = []
+
+        config["zha"]["zigpy_config"]["ota"]["extra_providers"].append(
+            new_provider
+        )
+
+        # 写回配置文件
+        with open(CONFIGURATION_YAML, "w", encoding="utf-8") as f:
+            yaml.dump(config, f, default_flow_style=False, allow_unicode=True)
+
+        _LOGGER.warning(
+            "EmotionAir OTA: 已自动配置 ZHA OTA provider (path=%s)。"
+            "请重启 Home Assistant 以使 ZHA 加载固件目录。",
+            OTA_DIR,
+        )
+
+    except Exception as err:
+        _LOGGER.error(
+            "EmotionAir OTA: 自动配置 configuration.yaml 失败 - %s。"
+            "请手动添加以下配置:\n"
+            "zha:\n"
+            "  zigpy_config:\n"
+            "    ota:\n"
+            "      extra_providers:\n"
+            "        - type: advanced\n"
+            "          path: /config/zigpy_ota\n"
+            "          warning: 'I understand I can *destroy* my devices...'\n",
+            err,
+        )
+
