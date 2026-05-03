@@ -1,0 +1,21 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "EmotionAir OTA",
+        "description": "This integration will automatically download and manage Zigbee OTA firmware updates for EmotionAir devices.",
+        "data": {}
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "EmotionAir OTA Settings",
+        "data": {
+          "check_interval_hours": "Firmware check interval (hours)"
+        }
+      }
+    }
+  }
+}

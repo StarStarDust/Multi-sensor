@@ -1,0 +1,11 @@
+{
+  "domain": "emotionair",
+  "name": "EmotionAir OTA",
+  "version": "1.0.0",
+  "documentation": "https://github.com/StarStarDust/Multi-sensor",
+  "issue_tracker": "https://github.com/StarStarDust/Multi-sensor/issues",
+  "dependencies": [],
+  "codeowners": ["@StarStarDust"],
+  "iot_class": "cloud_polling",
+  "config_flow": true
+}
