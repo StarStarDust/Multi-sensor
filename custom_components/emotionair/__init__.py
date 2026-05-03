@@ -6,7 +6,7 @@ import os
 import asyncio
 from datetime import timedelta
 
-import yaml
+
 import aiohttp
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
@@ -180,11 +180,10 @@ def _write_firmware(path: str, data: bytes):
 def _ensure_zha_ota_config():
     """Ensure ZHA is configured to use the OTA directory.
 
-    Uses the new `extra_providers` format with `type: advanced`.
-    The `warning` field is required by zigpy and must match exactly.
+    Appends the ZHA OTA provider config to configuration.yaml as plain text,
+    avoiding yaml.safe_load() which cannot handle HA's !include tags.
     The user needs to restart HA once for ZHA to pick up the change.
     """
-    # zigpy 要求的固定警告字符串，必须一字不差
     REQUIRED_WARNING = (
         "I understand I can *destroy* my devices by enabling OTA updates"
         " from files. Some OTA updates can be mistakenly applied to the"
@@ -192,72 +191,58 @@ def _ensure_zha_ota_config():
         " own risk."
     )
 
+    ZHA_CONFIG_BLOCK = f"""
+# === EmotionAir OTA - Auto Generated ===
+zha:
+  zigpy_config:
+    ota:
+      extra_providers:
+        - type: advanced
+          path: {OTA_DIR}
+          warning: >-
+            {REQUIRED_WARNING}
+# === End EmotionAir OTA ===
+"""
+
     try:
-        # 读取现有配置
-        config = {}
+        # 读取现有内容
+        content = ""
         if os.path.exists(CONFIGURATION_YAML):
             with open(CONFIGURATION_YAML, "r", encoding="utf-8") as f:
-                config = yaml.safe_load(f) or {}
+                content = f.read()
 
-        # 检查是否已经配置了 advanced provider 指向我们的 OTA 目录
-        zha_config = config.get("zha", {})
-        zigpy_config = zha_config.get("zigpy_config", {})
-        ota_config = zigpy_config.get("ota", {})
-        extra_providers = ota_config.get("extra_providers", [])
+        # 如果已经包含我们的配置，跳过
+        if "EmotionAir OTA - Auto Generated" in content:
+            _LOGGER.debug(
+                "EmotionAir OTA: ZHA OTA provider 配置已存在，无需修改"
+            )
+            return
 
-        # 检查是否已存在指向 OTA_DIR 的 advanced provider
-        for provider in extra_providers:
-            if (
-                provider.get("type") == "advanced"
-                and provider.get("path") == OTA_DIR
-            ):
-                _LOGGER.debug(
-                    "EmotionAir OTA: ZHA OTA advanced provider 已配置，无需修改"
-                )
-                return
+        # 如果用户已经手动配置了 zha，不要重复添加
+        if "zha:" in content:
+            _LOGGER.warning(
+                "EmotionAir OTA: 检测到 configuration.yaml 中已有 zha 配置，"
+                "跳过自动配置。请手动添加 OTA provider:\n%s",
+                ZHA_CONFIG_BLOCK,
+            )
+            return
 
-        # 构建新的 advanced provider 配置
-        new_provider = {
-            "type": "advanced",
-            "path": OTA_DIR,
-            "warning": REQUIRED_WARNING,
-        }
-
-        # 确保配置路径存在
-        if "zha" not in config:
-            config["zha"] = {}
-        if "zigpy_config" not in config["zha"]:
-            config["zha"]["zigpy_config"] = {}
-        if "ota" not in config["zha"]["zigpy_config"]:
-            config["zha"]["zigpy_config"]["ota"] = {}
-        if "extra_providers" not in config["zha"]["zigpy_config"]["ota"]:
-            config["zha"]["zigpy_config"]["ota"]["extra_providers"] = []
-
-        config["zha"]["zigpy_config"]["ota"]["extra_providers"].append(
-            new_provider
-        )
-
-        # 写回配置文件
-        with open(CONFIGURATION_YAML, "w", encoding="utf-8") as f:
-            yaml.dump(config, f, default_flow_style=False, allow_unicode=True)
+        # 追加到文件末尾
+        with open(CONFIGURATION_YAML, "a", encoding="utf-8") as f:
+            f.write(ZHA_CONFIG_BLOCK)
 
         _LOGGER.warning(
-            "EmotionAir OTA: 已自动配置 ZHA OTA provider (path=%s)。"
-            "请重启 Home Assistant 以使 ZHA 加载固件目录。",
+            "EmotionAir OTA: 已自动添加 ZHA OTA provider 配置到 configuration.yaml。"
+            "请重启 Home Assistant 以使 ZHA 加载固件目录 (%s)。",
             OTA_DIR,
         )
 
     except Exception as err:
         _LOGGER.error(
             "EmotionAir OTA: 自动配置 configuration.yaml 失败 - %s。"
-            "请手动添加以下配置:\n"
-            "zha:\n"
-            "  zigpy_config:\n"
-            "    ota:\n"
-            "      extra_providers:\n"
-            "        - type: advanced\n"
-            "          path: /config/zigpy_ota\n"
-            "          warning: 'I understand I can *destroy* my devices...'\n",
+            "请手动在 configuration.yaml 末尾添加:\n%s",
             err,
+            ZHA_CONFIG_BLOCK,
         )
+
 
