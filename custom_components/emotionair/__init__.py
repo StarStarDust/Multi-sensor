@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import logging
 import os
+import shutil
 import asyncio
 from datetime import timedelta
 
@@ -35,6 +36,9 @@ OTA_DIR = "/config/zigpy_ota"
 # HA 配置文件路径
 CONFIGURATION_YAML = "/config/configuration.yaml"
 
+# HA 蓝图目标目录
+BLUEPRINT_DIR = "/config/blueprints/automation/emotionair"
+
 # 默认检查间隔（小时）
 DEFAULT_CHECK_INTERVAL = 6
 
@@ -50,6 +54,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     # 自动配置 ZHA 的 OTA 目录（修改 configuration.yaml）
     await hass.async_add_executor_job(_ensure_zha_ota_config)
+
+    # 自动安装蓝图
+    await hass.async_add_executor_job(_install_blueprints)
 
     # 定义固件检查和下载函数
     async def check_and_download_firmware(_=None):
@@ -246,3 +253,33 @@ zha:
         )
 
 
+def _install_blueprints():
+    """Copy bundled blueprint files to HA's blueprints directory."""
+    try:
+        # 插件自带的蓝图目录
+        src_dir = os.path.join(os.path.dirname(__file__), "blueprints")
+
+        if not os.path.exists(src_dir):
+            _LOGGER.debug("EmotionAir OTA: 未找到内置蓝图目录，跳过")
+            return
+
+        # 创建目标目录
+        os.makedirs(BLUEPRINT_DIR, exist_ok=True)
+
+        # 复制所有 .yaml 蓝图文件
+        for filename in os.listdir(src_dir):
+            if not filename.endswith(".yaml"):
+                continue
+
+            src_path = os.path.join(src_dir, filename)
+            dst_path = os.path.join(BLUEPRINT_DIR, filename)
+
+            # 始终覆盖（保证蓝图更新）
+            shutil.copy2(src_path, dst_path)
+            _LOGGER.info(
+                "EmotionAir OTA: 蓝图 %s 已安装到 %s",
+                filename, BLUEPRINT_DIR,
+            )
+
+    except Exception as err:
+        _LOGGER.error("EmotionAir OTA: 安装蓝图失败 - %s", err)
