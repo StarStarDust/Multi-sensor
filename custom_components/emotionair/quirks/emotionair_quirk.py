@@ -5,18 +5,19 @@ from zigpy.quirks import CustomCluster, CustomDevice
 from zigpy.zcl.clusters.general import Basic, MultistateInput, OnOff, PowerConfiguration, LevelControl
 from zigpy.zcl.clusters.measurement import IlluminanceMeasurement, TemperatureMeasurement, RelativeHumidity, OccupancySensing
 
-eMotionAir_MANUFACTURER = "LinknLink" # 替换为固件中的真�?manufacturer
-eMotionAir_MODEL = "eMotion Air"      # 替换为固件中的真�?model
+eMotionAir_MANUFACTURER = "LinknLink" # Replace with the real manufacturer from firmware
+eMotionAir_MODEL = "eMotion Air"      # Replace with the real model from firmware
 
 class eMotionAirMultistateInputCluster(CustomCluster, MultistateInput):
-    """自定义多态输入簇，用于拦�?PresentValue 属性上报并转换�?zha_event."""
+    """Custom Multistate Input cluster to intercept PresentValue reports and convert to zha_event."""
     
     cluster_id = MultistateInput.cluster_id
     
     def _update_attribute(self, attrid, value):
         super()._update_attribute(attrid, value)
         
-        # 0x0055 (85) �?PresentValue 属�?        if attrid == 0x0055:
+        # 0x0055 (85) is the PresentValue attribute
+        if attrid == 0x0055:
             action = None
             if value == 1:
                 action = "single"
@@ -30,7 +31,7 @@ class eMotionAirMultistateInputCluster(CustomCluster, MultistateInput):
                 action = "release"
                 
             if action:
-                # 发�?ZHA 事件
+                # Send ZHA event
                 self.listener_event(
                     "zha_send_event",
                     action,
@@ -42,15 +43,16 @@ class eMotionAirMultistateInputCluster(CustomCluster, MultistateInput):
                 )
 
 class eMotionAirButtonQuirk(CustomDevice):
-    """eMotion Air 自定�?Quirk 设备."""
+    """eMotion Air custom Quirk device."""
 
-    # 1. 签名：必须与你的固件设备入网时的 Signature 完全匹配
+    # 1. Signature: Must exactly match your firmware device's joining Signature
     signature = {
         "models_info": [(eMotionAir_MANUFACTURER, eMotionAir_MODEL)],
         "endpoints": {
             1: {
                 "profile_id": zha.PROFILE_ID,
-                # 注意：这里的 device_type �?clusters 必须严格和你固件中一�?                "device_type": zha.DeviceType.ON_OFF_SWITCH, 
+                # Note: The device_type and clusters here must strictly match your firmware
+                "device_type": zha.DeviceType.ON_OFF_SWITCH, 
                 "input_clusters": [
                     Basic.cluster_id,
                     PowerConfiguration.cluster_id,
@@ -68,7 +70,7 @@ class eMotionAirButtonQuirk(CustomDevice):
         },
     }
 
-    # 2. 替换：将原生�?MultistateInput 替换为我们的 eMotionAirMultistateInputCluster
+    # 2. Replacement: Replace native MultistateInput with our eMotionAirMultistateInputCluster
     replacement = {
         "endpoints": {
             1: {
@@ -77,7 +79,7 @@ class eMotionAirButtonQuirk(CustomDevice):
                 "input_clusters": [
                     Basic.cluster_id,
                     PowerConfiguration.cluster_id,
-                    eMotionAirMultistateInputCluster, # 拦截并发�?zha_event
+                    eMotionAirMultistateInputCluster, # Intercept and send zha_event
                     IlluminanceMeasurement.cluster_id,
                     TemperatureMeasurement.cluster_id,
                     RelativeHumidity.cluster_id,
