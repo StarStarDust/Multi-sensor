@@ -1,7 +1,7 @@
 {
   "domain": "emotionair",
   "name": "eMotion Air",
-  "version": "1.1.0",
+  "version": "1.1.2",
   "documentation": "https://github.com/StarStarDust/Multi-sensor",
   "issue_tracker": "https://github.com/StarStarDust/Multi-sensor/issues",
   "dependencies": [],
