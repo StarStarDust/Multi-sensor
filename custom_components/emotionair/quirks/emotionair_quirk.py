@@ -46,6 +46,15 @@ class eMotionAirMultistateInputCluster(CustomCluster, MultistateInput):
 class eMotionAirButtonQuirk(CustomDevice):
     """eMotion Air custom Quirk device."""
 
+    # 0. Device Automation Triggers: Expose events to the Home Assistant UI
+    device_automation_triggers = {
+        ("remote_button_short_press", "button"): {"command": "single"},
+        ("remote_button_double_press", "button"): {"command": "double"},
+        ("remote_button_triple_press", "button"): {"command": "triple"},
+        ("remote_button_long_press", "button"): {"command": "hold"},
+        ("remote_button_long_release", "button"): {"command": "release"},
+    }
+
     # 1. Signature: Must exactly match your firmware device's joining Signature
     signature = {
         "models_info": [(eMotionAir_MANUFACTURER, eMotionAir_MODEL)],

@@ -232,12 +232,26 @@ zha:
             )
             return
 
-        # Do not add if user already manually configured zha (or has old config)
+        # If zha config exists, try to intelligently inject custom_quirks_path if missing
         if "zha:" in content:
+            if "custom_quirks_path:" not in content:
+                import re
+                new_content = re.sub(
+                    r'(^zha:[ \t]*(?:\n|\r\n))',
+                    f'\\1  custom_quirks_path: {QUIRKS_DIR}\n',
+                    content,
+                    flags=re.MULTILINE
+                )
+                if new_content != content:
+                    with open(CONFIGURATION_YAML, "w", encoding="utf-8") as f:
+                        f.write(new_content)
+                    _LOGGER.warning("eMotion Air: Automatically injected custom_quirks_path into your existing zha config.")
+            else:
+                _LOGGER.debug("eMotion Air: custom_quirks_path already exists in configuration.")
+                
             _LOGGER.warning(
                 "eMotion Air: Existing zha config detected in configuration.yaml, "
-                "skipping auto-configuration. Please manually add OTA provider and custom_quirks_path:\n%s",
-                ZHA_CONFIG_BLOCK,
+                "skipping full block auto-configuration. Ensure your OTA settings are correct."
             )
             return
 
