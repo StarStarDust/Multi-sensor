@@ -1,5 +1,5 @@
 {
-  "name": "EmotionAir OTA",
+  "name": "eMotionAir OTA",
   "homeassistant": "2024.1.0",
   "render_readme": true,
   "zip_release": false

@@ -1,4 +1,4 @@
-"""EmotionAir OTA Firmware Updater for Home Assistant."""
+"""eMotionAir OTA Firmware Updater for Home Assistant."""
 from __future__ import annotations
 
 import logging
@@ -46,7 +46,7 @@ DEFAULT_CHECK_INTERVAL = 6
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    """Set up EmotionAir OTA from a config entry."""
+    """Set up eMotionAir OTA from a config entry."""
     hass.data.setdefault(DOMAIN, {})
 
     # 确保 OTA 目录存在
@@ -61,7 +61,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     # 定义固件检查和下载函数
     async def check_and_download_firmware(_=None):
         """Check GitHub Releases for new firmware and download if available."""
-        _LOGGER.info("EmotionAir OTA: 开始检查固件更新...")
+        _LOGGER.info("eMotionAir OTA: 开始检查固件更新...")
 
         try:
             async with aiohttp.ClientSession() as session:
@@ -70,7 +70,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                 async with session.get(GITHUB_API_URL, headers=headers) as resp:
                     if resp.status != 200:
                         _LOGGER.error(
-                            "EmotionAir OTA: 无法获取 GitHub Release 信息, "
+                            "eMotionAir OTA: 无法获取 GitHub Release 信息, "
                             "HTTP %s", resp.status
                         )
                         return
@@ -87,7 +87,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
                 if not firmware_assets:
                     _LOGGER.info(
-                        "EmotionAir OTA: Release %s 中未找到固件文件",
+                        "eMotionAir OTA: Release %s 中未找到固件文件",
                         release_tag
                     )
                     return
@@ -103,21 +103,21 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                         os.path.exists, local_path
                     ):
                         _LOGGER.debug(
-                            "EmotionAir OTA: 固件 %s 已存在，跳过下载",
+                            "eMotionAir OTA: 固件 %s 已存在，跳过下载",
                             filename
                         )
                         continue
 
                     # 下载固件
                     _LOGGER.info(
-                        "EmotionAir OTA: 发现新固件 %s (%s)，开始下载...",
+                        "eMotionAir OTA: 发现新固件 %s (%s)，开始下载...",
                         filename, release_tag
                     )
 
                     async with session.get(download_url) as fw_resp:
                         if fw_resp.status != 200:
                             _LOGGER.error(
-                                "EmotionAir OTA: 固件下载失败, HTTP %s",
+                                "eMotionAir OTA: 固件下载失败, HTTP %s",
                                 fw_resp.status
                             )
                             continue
@@ -130,15 +130,15 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                     )
 
                     _LOGGER.info(
-                        "EmotionAir OTA: 固件 %s 下载完成 (%d bytes)，"
+                        "eMotionAir OTA: 固件 %s 下载完成 (%d bytes)，"
                         "已放入 %s",
                         filename, len(fw_data), OTA_DIR
                     )
 
         except aiohttp.ClientError as err:
-            _LOGGER.error("EmotionAir OTA: 网络错误 - %s", err)
+            _LOGGER.error("eMotionAir OTA: 网络错误 - %s", err)
         except Exception as err:
-            _LOGGER.error("EmotionAir OTA: 检查固件时出错 - %s", err)
+            _LOGGER.error("eMotionAir OTA: 检查固件时出错 - %s", err)
 
     # 启动时立即检查一次
     hass.async_create_task(check_and_download_firmware())
@@ -158,18 +158,18 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         "cancel_interval": cancel_interval,
     }
 
-    _LOGGER.info("EmotionAir OTA: 集成已启动，每 %d 小时检查一次固件更新", check_interval)
+    _LOGGER.info("eMotionAir OTA: 集成已启动，每 %d 小时检查一次固件更新", check_interval)
     return True
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    """Unload EmotionAir OTA config entry."""
+    """Unload eMotionAir OTA config entry."""
     data = hass.data[DOMAIN].pop(entry.entry_id, {})
     cancel = data.get("cancel_interval")
     if cancel:
         cancel()
 
-    _LOGGER.info("EmotionAir OTA: 集成已卸载")
+    _LOGGER.info("eMotionAir OTA: 集成已卸载")
     return True
 
 
@@ -199,7 +199,7 @@ def _ensure_zha_ota_config():
     )
 
     ZHA_CONFIG_BLOCK = f"""
-# === EmotionAir OTA - Auto Generated ===
+# === eMotionAir OTA - Auto Generated ===
 zha:
   zigpy_config:
     ota:
@@ -208,7 +208,7 @@ zha:
           path: {OTA_DIR}
           warning: >-
             {REQUIRED_WARNING}
-# === End EmotionAir OTA ===
+# === End eMotionAir OTA ===
 """
 
     try:
@@ -219,16 +219,16 @@ zha:
                 content = f.read()
 
         # 如果已经包含我们的配置，跳过
-        if "EmotionAir OTA - Auto Generated" in content:
+        if "eMotionAir OTA - Auto Generated" in content:
             _LOGGER.debug(
-                "EmotionAir OTA: ZHA OTA provider 配置已存在，无需修改"
+                "eMotionAir OTA: ZHA OTA provider 配置已存在，无需修改"
             )
             return
 
         # 如果用户已经手动配置了 zha，不要重复添加
         if "zha:" in content:
             _LOGGER.warning(
-                "EmotionAir OTA: 检测到 configuration.yaml 中已有 zha 配置，"
+                "eMotionAir OTA: 检测到 configuration.yaml 中已有 zha 配置，"
                 "跳过自动配置。请手动添加 OTA provider:\n%s",
                 ZHA_CONFIG_BLOCK,
             )
@@ -239,14 +239,14 @@ zha:
             f.write(ZHA_CONFIG_BLOCK)
 
         _LOGGER.warning(
-            "EmotionAir OTA: 已自动添加 ZHA OTA provider 配置到 configuration.yaml。"
+            "eMotionAir OTA: 已自动添加 ZHA OTA provider 配置到 configuration.yaml。"
             "请重启 Home Assistant 以使 ZHA 加载固件目录 (%s)。",
             OTA_DIR,
         )
 
     except Exception as err:
         _LOGGER.error(
-            "EmotionAir OTA: 自动配置 configuration.yaml 失败 - %s。"
+            "eMotionAir OTA: 自动配置 configuration.yaml 失败 - %s。"
             "请手动在 configuration.yaml 末尾添加:\n%s",
             err,
             ZHA_CONFIG_BLOCK,
@@ -260,7 +260,7 @@ def _install_blueprints():
         src_dir = os.path.join(os.path.dirname(__file__), "blueprints")
 
         if not os.path.exists(src_dir):
-            _LOGGER.debug("EmotionAir OTA: 未找到内置蓝图目录，跳过")
+            _LOGGER.debug("eMotionAir OTA: 未找到内置蓝图目录，跳过")
             return
 
         # 创建目标目录
@@ -277,9 +277,9 @@ def _install_blueprints():
             # 始终覆盖（保证蓝图更新）
             shutil.copy2(src_path, dst_path)
             _LOGGER.info(
-                "EmotionAir OTA: 蓝图 %s 已安装到 %s",
+                "eMotionAir OTA: 蓝图 %s 已安装到 %s",
                 filename, BLUEPRINT_DIR,
             )
 
     except Exception as err:
-        _LOGGER.error("EmotionAir OTA: 安装蓝图失败 - %s", err)
+        _LOGGER.error("eMotionAir OTA: 安装蓝图失败 - %s", err)

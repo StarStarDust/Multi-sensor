@@ -1,4 +1,4 @@
-"""Config flow for EmotionAir OTA integration."""
+"""Config flow for eMotionAir OTA integration."""
 from __future__ import annotations
 
 from homeassistant import config_entries
@@ -7,8 +7,8 @@ from homeassistant.data_entry_flow import FlowResult
 DOMAIN = "emotionair"
 
 
-class EmotionAirConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
-    """Handle a config flow for EmotionAir OTA."""
+class eMotionAirConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
+    """Handle a config flow for eMotionAir OTA."""
 
     VERSION = 1
 
@@ -20,7 +20,7 @@ class EmotionAirConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         if user_input is not None:
             return self.async_create_entry(
-                title="EmotionAir OTA",
+                title="eMotionAir OTA",
                 data={},
             )
 
@@ -30,11 +30,11 @@ class EmotionAirConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     @staticmethod
     def async_get_options_flow(config_entry):
         """Get the options flow."""
-        return EmotionAirOptionsFlow(config_entry)
+        return eMotionAirOptionsFlow(config_entry)
 
 
-class EmotionAirOptionsFlow(config_entries.OptionsFlow):
-    """Handle options for EmotionAir OTA."""
+class eMotionAirOptionsFlow(config_entries.OptionsFlow):
+    """Handle options for eMotionAir OTA."""
 
     def __init__(self, config_entry: config_entries.ConfigEntry) -> None:
         """Initialize options flow."""
