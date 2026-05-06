@@ -1,4 +1,4 @@
-# eMotionAir OTA Firmware Updater
+# eMotion Air Firmware Updater
 
 Home Assistant custom integration for automatic OTA firmware updates of eMotionAir Zigbee devices.
 
@@ -16,7 +16,7 @@ Home Assistant custom integration for automatic OTA firmware updates of eMotionA
 1. Open HACS in your Home Assistant
 2. Click the three dots menu → **Custom repositories**
 3. Add this repository URL, select **Integration** as the category
-4. Click **Add** → Find "eMotionAir OTA" → Click **Download**
+4. Click **Add** → Find "eMotion Air" → Click **Download**
 5. Restart Home Assistant
 
 ### Manual Installation
@@ -27,7 +27,7 @@ Home Assistant custom integration for automatic OTA firmware updates of eMotionA
 ## Configuration
 
 1. Go to **Settings** → **Devices & Services** → **Add Integration**
-2. Search for **eMotionAir OTA**
+2. Search for **eMotion Air**
 3. Follow the setup wizard
 
 ## How It Works

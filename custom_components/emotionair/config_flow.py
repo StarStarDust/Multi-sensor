@@ -1,4 +1,4 @@
-"""Config flow for eMotionAir OTA integration."""
+"""Config flow for eMotion Air integration."""
 from __future__ import annotations
 
 from homeassistant import config_entries
@@ -8,23 +8,23 @@ DOMAIN = "emotionair"
 
 
 class eMotionAirConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
-    """Handle a config flow for eMotionAir OTA."""
+    """Handle a config flow for eMotion Air."""
 
     VERSION = 1
 
     async def async_step_user(self, user_input=None) -> FlowResult:
         """Handle the initial step."""
-        # 防止重复添加
+        # Prevent duplicate entries
         await self.async_set_unique_id(DOMAIN)
         self._abort_if_unique_id_configured()
 
         if user_input is not None:
             return self.async_create_entry(
-                title="eMotionAir OTA",
+                title="eMotion Air",
                 data={},
             )
 
-        # 显示确认页面（无需用户填写任何信息）
+        # Show confirmation page (no user input needed)
         return self.async_show_form(step_id="user")
 
     @staticmethod
@@ -34,7 +34,7 @@ class eMotionAirConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
 
 class eMotionAirOptionsFlow(config_entries.OptionsFlow):
-    """Handle options for eMotionAir OTA."""
+    """Handle options for eMotion Air."""
 
     def __init__(self, config_entry: config_entries.ConfigEntry) -> None:
         """Initialize options flow."""

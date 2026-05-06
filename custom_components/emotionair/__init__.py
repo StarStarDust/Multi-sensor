@@ -1,4 +1,4 @@
-"""eMotionAir OTA Firmware Updater for Home Assistant."""
+"""eMotion Air Firmware Updater for Home Assistant."""
 from __future__ import annotations
 
 import logging
@@ -18,7 +18,7 @@ _LOGGER = logging.getLogger(__name__)
 DOMAIN = "emotionair"
 
 # ============================================================
-#  配置项 - 根据你的实际情况修改
+#  Configuration - Modify according to your needs
 # ============================================================
 
 # GitHub repo info (firmware is stored in GitHub Releases assets)
@@ -49,7 +49,7 @@ DEFAULT_CHECK_INTERVAL = 6
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    """Set up eMotionAir OTA from a config entry."""
+    """Set up eMotion Air from a config entry."""
     hass.data.setdefault(DOMAIN, {})
 
     # Ensure OTA directory exists
@@ -67,7 +67,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     # Define firmware check and download function
     async def check_and_download_firmware(_=None):
         """Check GitHub Releases for new firmware and download if available."""
-        _LOGGER.info("eMotionAir OTA: Starting firmware update check...")
+        _LOGGER.info("eMotion Air: Starting firmware update check...")
 
         try:
             async with aiohttp.ClientSession() as session:
@@ -76,7 +76,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                 async with session.get(GITHUB_API_URL, headers=headers) as resp:
                     if resp.status != 200:
                         _LOGGER.error(
-                            "eMotionAir OTA: Failed to fetch GitHub Release info, "
+                            "eMotion Air: Failed to fetch GitHub Release info, "
                             "HTTP %s", resp.status
                         )
                         return
@@ -93,7 +93,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
                 if not firmware_assets:
                     _LOGGER.info(
-                        "eMotionAir OTA: No firmware file found in Release %s",
+                        "eMotion Air: No firmware file found in Release %s",
                         release_tag
                     )
                     return
@@ -109,21 +109,21 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                         os.path.exists, local_path
                     ):
                         _LOGGER.debug(
-                            "eMotionAir OTA: Firmware %s already exists, skipping download",
+                            "eMotion Air: Firmware %s already exists, skipping download",
                             filename
                         )
                         continue
 
                     # Download firmware
                     _LOGGER.info(
-                        "eMotionAir OTA: Found new firmware %s (%s), starting download...",
+                        "eMotion Air: Found new firmware %s (%s), starting download...",
                         filename, release_tag
                     )
 
                     async with session.get(download_url) as fw_resp:
                         if fw_resp.status != 200:
                             _LOGGER.error(
-                                "eMotionAir OTA: Firmware download failed, HTTP %s",
+                                "eMotion Air: Firmware download failed, HTTP %s",
                                 fw_resp.status
                             )
                             continue
@@ -136,15 +136,15 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                     )
 
                     _LOGGER.info(
-                        "eMotionAir OTA: 固件 %s 下载完成 (%d bytes)，"
-                        "已放入 %s",
+                        "eMotion Air: Firmware %s downloaded successfully (%d bytes), "
+                        "saved to %s",
                         filename, len(fw_data), OTA_DIR
                     )
 
         except aiohttp.ClientError as err:
-            _LOGGER.error("eMotionAir OTA: Network error - %s", err)
+            _LOGGER.error("eMotion Air: Network error - %s", err)
         except Exception as err:
-            _LOGGER.error("eMotionAir OTA: Error checking for firmware - %s", err)
+            _LOGGER.error("eMotion Air: Error checking for firmware - %s", err)
 
     # Check immediately on startup
     hass.async_create_task(check_and_download_firmware())
@@ -164,18 +164,18 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         "cancel_interval": cancel_interval,
     }
 
-    _LOGGER.info("eMotionAir OTA: Integration started, checking for firmware updates every %d hours", check_interval)
+    _LOGGER.info("eMotion Air: Integration started, checking for firmware updates every %d hours", check_interval)
     return True
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    """Unload eMotionAir OTA config entry."""
+    """Unload eMotion Air config entry."""
     data = hass.data[DOMAIN].pop(entry.entry_id, {})
     cancel = data.get("cancel_interval")
     if cancel:
         cancel()
 
-    _LOGGER.info("eMotionAir OTA: Integration unloaded")
+    _LOGGER.info("eMotion Air: Integration unloaded")
     return True
 
 
@@ -205,7 +205,7 @@ def _ensure_zha_ota_config():
     )
 
     ZHA_CONFIG_BLOCK = f"""
-# === eMotionAir OTA & Quirks - Auto Generated ===
+# === eMotion Air & Quirks - Auto Generated ===
 zha:
   custom_quirks_path: {QUIRKS_DIR}
   zigpy_config:
@@ -226,17 +226,17 @@ zha:
                 content = f.read()
 
         # Skip if our new config is already present
-        if "eMotionAir OTA & Quirks - Auto Generated" in content:
+        if "eMotion Air & Quirks - Auto Generated" in content:
             _LOGGER.debug(
-                "eMotionAir OTA: ZHA OTA provider config already exists, no modification needed"
+                "eMotion Air: ZHA OTA provider config already exists, no modification needed"
             )
             return
 
         # Do not add if user already manually configured zha (or has old config)
         if "zha:" in content:
             _LOGGER.warning(
-                "eMotionAir OTA: 检测到 configuration.yaml 中已有 zha 配置，"
-                "跳过自动配置。请手动添加 OTA provider 和 custom_quirks_path:\n%s",
+                "eMotion Air: Existing zha config detected in configuration.yaml, "
+                "skipping auto-configuration. Please manually add OTA provider and custom_quirks_path:\n%s",
                 ZHA_CONFIG_BLOCK,
             )
             return
@@ -246,15 +246,15 @@ zha:
             f.write(ZHA_CONFIG_BLOCK)
 
         _LOGGER.warning(
-            "eMotionAir OTA: 已自动添加 ZHA OTA provider 配置到 configuration.yaml。"
-            "请重启 Home Assistant 以使 ZHA 加载固件目录 (%s)。",
+            "eMotion Air: Automatically added ZHA OTA provider config to configuration.yaml. "
+            "Please restart Home Assistant to apply changes (%s).",
             OTA_DIR,
         )
 
     except Exception as err:
         _LOGGER.error(
-            "eMotionAir OTA: 自动配置 configuration.yaml 失败 - %s。"
-            "请手动在 configuration.yaml 末尾添加:\n%s",
+            "eMotion Air: Failed to auto-configure configuration.yaml - %s. "
+            "Please manually append the following:\n%s",
             err,
             ZHA_CONFIG_BLOCK,
         )
@@ -267,7 +267,7 @@ def _install_blueprints():
         src_dir = os.path.join(os.path.dirname(__file__), "blueprints")
 
         if not os.path.exists(src_dir):
-            _LOGGER.debug("eMotionAir OTA: Bundled blueprints directory not found, skipping")
+            _LOGGER.debug("eMotion Air: Bundled blueprints directory not found, skipping")
             return
 
         # Create target directory
@@ -284,12 +284,12 @@ def _install_blueprints():
             # Always overwrite (ensure blueprint updates)
             shutil.copy2(src_path, dst_path)
             _LOGGER.info(
-                "eMotionAir OTA: Blueprint %s installed to %s",
+                "eMotion Air: Blueprint %s installed to %s",
                 filename, BLUEPRINT_DIR,
             )
 
     except Exception as err:
-        _LOGGER.error("eMotionAir OTA: Failed to install blueprint - %s", err)
+        _LOGGER.error("eMotion Air: Failed to install blueprint - %s", err)
 
 
 def _install_quirks():
@@ -299,7 +299,7 @@ def _install_quirks():
         src_dir = os.path.join(os.path.dirname(__file__), "quirks")
 
         if not os.path.exists(src_dir):
-            _LOGGER.debug("eMotionAir OTA: Bundled quirks directory not found, skipping")
+            _LOGGER.debug("eMotion Air: Bundled quirks directory not found, skipping")
             return
 
         # Create target directory
@@ -316,9 +316,9 @@ def _install_quirks():
             # Always overwrite (ensure updates)
             shutil.copy2(src_path, dst_path)
             _LOGGER.info(
-                "eMotionAir OTA: Quirk %s installed to %s",
+                "eMotion Air: Quirk %s installed to %s",
                 filename, QUIRKS_DIR,
             )
 
     except Exception as err:
-        _LOGGER.error("eMotionAir OTA: Failed to install Quirk - %s", err)
+        _LOGGER.error("eMotion Air: Failed to install Quirk - %s", err)

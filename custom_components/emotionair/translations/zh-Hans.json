@@ -2,7 +2,7 @@
   "config": {
     "step": {
       "user": {
-        "title": "eMotionAir OTA",
+        "title": "eMotion Air",
         "description": "安装后将自动下载并管理 eMotionAir 设备的 Zigbee OTA 固件更新。",
         "data": {}
       }
@@ -11,7 +11,7 @@
   "options": {
     "step": {
       "init": {
-        "title": "eMotionAir OTA 设置",
+        "title": "eMotion Air 设置",
         "data": {
           "check_interval_hours": "固件检查间隔（小时）"
         }
