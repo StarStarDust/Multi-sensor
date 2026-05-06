@@ -2,8 +2,9 @@
 
 from zigpy.profiles import zha
 from zigpy.quirks import CustomCluster, CustomDevice
-from zigpy.zcl.clusters.general import Basic, MultistateInput, OnOff, PowerConfiguration, LevelControl
+from zigpy.zcl.clusters.general import Basic, Identify, MultistateInput, OnOff, PowerConfiguration, LevelControl, Groups, Ota
 from zigpy.zcl.clusters.measurement import IlluminanceMeasurement, TemperatureMeasurement, RelativeHumidity, OccupancySensing
+from zigpy.zcl.clusters.lightlink import LightLink
 
 eMotionAir_MANUFACTURER = "LinknLink" # Replace with the real manufacturer from firmware
 eMotionAir_MODEL = "eMotion Air"      # Replace with the real model from firmware
@@ -50,21 +51,24 @@ class eMotionAirButtonQuirk(CustomDevice):
         "models_info": [(eMotionAir_MANUFACTURER, eMotionAir_MODEL)],
         "endpoints": {
             1: {
-                "profile_id": zha.PROFILE_ID,
-                # Note: The device_type and clusters here must strictly match your firmware
-                "device_type": zha.DeviceType.ON_OFF_SWITCH, 
+                "profile_id": 0x0104,
+                "device_type": 0x0850,
                 "input_clusters": [
                     Basic.cluster_id,
-                    PowerConfiguration.cluster_id,
-                    MultistateInput.cluster_id,
-                    IlluminanceMeasurement.cluster_id,
+                    Identify.cluster_id,
                     TemperatureMeasurement.cluster_id,
                     RelativeHumidity.cluster_id,
+                    IlluminanceMeasurement.cluster_id,
                     OccupancySensing.cluster_id,
+                    PowerConfiguration.cluster_id,
+                    MultistateInput.cluster_id,
                 ],
                 "output_clusters": [
+                    Groups.cluster_id,
                     OnOff.cluster_id,
                     LevelControl.cluster_id,
+                    Ota.cluster_id,
+                    LightLink.cluster_id,
                 ],
             }
         },
@@ -74,20 +78,24 @@ class eMotionAirButtonQuirk(CustomDevice):
     replacement = {
         "endpoints": {
             1: {
-                "profile_id": zha.PROFILE_ID,
-                "device_type": zha.DeviceType.ON_OFF_SWITCH,
+                "profile_id": 0x0104,
+                "device_type": 0x0850,
                 "input_clusters": [
                     Basic.cluster_id,
-                    PowerConfiguration.cluster_id,
-                    eMotionAirMultistateInputCluster, # Intercept and send zha_event
-                    IlluminanceMeasurement.cluster_id,
+                    Identify.cluster_id,
                     TemperatureMeasurement.cluster_id,
                     RelativeHumidity.cluster_id,
+                    IlluminanceMeasurement.cluster_id,
                     OccupancySensing.cluster_id,
+                    PowerConfiguration.cluster_id,
+                    eMotionAirMultistateInputCluster, # Intercept and send zha_event
                 ],
                 "output_clusters": [
+                    Groups.cluster_id,
                     OnOff.cluster_id,
                     LevelControl.cluster_id,
+                    Ota.cluster_id,
+                    LightLink.cluster_id,
                 ],
             }
         }

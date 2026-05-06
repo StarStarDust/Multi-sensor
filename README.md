@@ -1,13 +1,12 @@
-# eMotion Air Firmware Updater
+# eMotion Air Integration
 
-Home Assistant custom integration for automatic OTA firmware updates of eMotionAir Zigbee devices.
+Home Assistant custom integration for the eMotion Air Zigbee multi-sensor. This integration provides automatic OTA firmware updates, Zigbee Quirks for advanced button features, and Automation Blueprints.
 
 ## Features
 
-- Automatically downloads the latest firmware from GitHub Releases
-- Places firmware files in the ZHA OTA directory (`/config/zigpy_ota/`)
-- Periodic update checks (every 6 hours)
-- Supports ZHA integration for seamless Zigbee OTA updates
+- **Automated OTA Updates:** Automatically downloads the latest firmware from GitHub Releases and places it in the ZHA OTA directory (`/config/zigpy_ota/`).
+- **ZHA Quirks Installation:** Automatically deploys `emotionair_quirk.py` to `/config/custom_zha_quirks/` and auto-configures your `configuration.yaml` to ensure ZHA perfectly recognizes all multi-state button events (single, double, hold, etc.).
+- **Automation Blueprints:** Installs pre-configured automation blueprints directly into `/config/blueprints/automation/emotionair/` for instant, out-of-the-box automation setups.
 
 ## Installation
 
@@ -17,7 +16,7 @@ Home Assistant custom integration for automatic OTA firmware updates of eMotionA
 2. Click the three dots menu → **Custom repositories**
 3. Add this repository URL, select **Integration** as the category
 4. Click **Add** → Find "eMotion Air" → Click **Download**
-5. Restart Home Assistant
+5. **Restart Home Assistant** (Required for the Quirk and Blueprint files to be deployed and loaded)
 
 ### Manual Installation
 
@@ -32,13 +31,15 @@ Home Assistant custom integration for automatic OTA firmware updates of eMotionA
 
 ## How It Works
 
-1. The integration periodically checks for new firmware releases
-2. When a new version is found, it downloads the `.zigbee` firmware file
-3. The file is placed in `/config/zigpy_ota/` where ZHA can find it
-4. Your eMotionAir device will receive the update during its next OTA query
+1. Upon starting, the integration automatically injects the `zha` custom OTA and Quirk paths into your `configuration.yaml` if they don't already exist.
+2. It copies the bundled `.py` Quirks and `.yaml` Blueprints to their respective HA directories.
+3. It periodically checks GitHub (every 6 hours) for new firmware releases.
+4. When a new version is found, it downloads the `.zigbee` firmware file into `/config/zigpy_ota/`.
+5. Your eMotion Air device will receive the update automatically during its next OTA query, and its advanced button features will be parsed by the injected Quirk.
 
 ## Device Info
 
+- **Manufacturer:** `LinknLink`
+- **Product:** `eMotion Air`
+- **Firmware Image Type:** `0x0301`
 - **Manufacturer Code:** `0x4231`
-- **Image Type:** `0x0301`
-- **Product:** eMotionAir
