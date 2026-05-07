@@ -1,6 +1,6 @@
-// Telink OTA UUIDs
+// pvvx / Telink Standard OTA UUIDs
 const TELINK_OTA_SERVICE_UUID = '00010203-0405-0607-0809-0a0b0c0d1912';
-const TELINK_OTA_CHARACTERISTIC_UUID = '00010203-0405-0607-0809-0a0b0c0d1912';
+const TELINK_OTA_CHARACTERISTIC_UUID = '00010203-0405-0607-0809-0a0b0c0d2b12'; // 修正为 2b12
 
 let bluetoothDevice = null;
 let otaCharacteristic = null;
@@ -54,12 +54,14 @@ async function onConnectClick() {
         statusText.innerText = '正在连接...';
 
         const server = await bluetoothDevice.gatt.connect();
-        addLog('GATT 已连接，正在发现服务...', 'system');
+        addLog('GATT 已连接，等待连接稳定...', 'system');
+        await new Promise(r => setTimeout(r, 500));
 
+        addLog('正在发现服务...', 'system');
         const service = await server.getPrimaryService(TELINK_OTA_SERVICE_UUID);
         otaCharacteristic = await service.getCharacteristic(TELINK_OTA_CHARACTERISTIC_UUID);
 
-        addLog('OTA 服务就绪', 'success');
+        addLog('OTA 服务就绪 (pvvx 兼容模式)', 'success');
         statusText.innerText = '已连接';
         statusDot.classList.add('connected');
         connectBtn.innerText = '断开连接';
@@ -89,7 +91,7 @@ function onDisconnected() {
     progressContainer.style.display = 'none';
 }
 
-// OTA 逻辑实现
+// OTA 逻辑实现 (对齐 pvvx 稳定性补丁)
 async function startUpgrade() {
     if (!otaCharacteristic || !firmwareBuffer) return;
 
@@ -99,48 +101,59 @@ async function startUpgrade() {
     progressFill.style.width = '0%';
     progressPercent.innerText = '0%';
 
-    addLog('启动 OTA 流程...', 'system');
+    addLog('启动 OTA 流程 (pvvx 稳定性策略)...', 'system');
 
     try {
         const data = new Uint8Array(firmwareBuffer);
         const totalSize = data.length;
-        const chunkSize = 16; // 泰凌微标准每包 16 字节数据
+        const chunkSize = 16; 
         const totalChunks = Math.ceil(totalSize / chunkSize);
 
-        // 1. 发送 OTA Start (CMD 0xFF01 + Index 0)
-        // 泰凌微格式: [Index_L, Index_H, Data[16], CRC_L, CRC_H]
-        // 第一个包 Index 为 0，Data 为 0
-        await sendOtaPacket(0, new Uint8Array(chunkSize).fill(0));
-        addLog('OTA 握手成功，开始传输数据...', 'system');
+        // 1. pvvx 握手序列
+        addLog('发送握手指令...', 'system');
+        await otaCharacteristic.writeValueWithoutResponse(new Uint8Array([0x00, 0xff]));
+        await otaCharacteristic.writeValueWithoutResponse(new Uint8Array([0x01, 0xff]));
+        
+        // 关键延时：给芯片时间准备 Flash 擦除
+        addLog('等待 300ms 准备 Flash...', 'system');
+        await new Promise(r => setTimeout(r, 300));
 
         // 2. 循环发送固件数据
         for (let i = 0; i < totalChunks; i++) {
             const offset = i * chunkSize;
-            const chunk = new Uint8Array(chunkSize).fill(0xff); // 补齐 16 字节
+            const chunk = new Uint8Array(chunkSize).fill(0xff); 
             const actualSize = Math.min(chunkSize, totalSize - offset);
             chunk.set(data.slice(offset, offset + actualSize));
 
-            // 发送数据包，Index 从 1 开始 (pvvx 习惯，或者从 0 开始取决于 SDK)
-            // 标准泰凌微 OTA：数据包 Index 从 0 到 N
+            // 发送数据包
             await sendOtaPacket(i, chunk);
 
+            // 关键稳定性补丁：每 8 包进行一次 readValue 强制同步
+            if (i > 0 && i % 8 === 0) {
+                await otaCharacteristic.readValue(); 
+            }
+
             // 更新进度
-            if (i % 10 === 0 || i === totalChunks - 1) {
+            if (i % 20 === 0 || i === totalChunks - 1) {
                 const percent = Math.round((i / totalChunks) * 100);
                 progressFill.style.width = `${percent}%`;
                 progressPercent.innerText = `${percent}%`;
             }
         }
 
-        // 3. 发送 OTA End (CMD 0xFF02)
-        // 通常最后一个包发送特定的结束指令
-        const endPacket = new Uint8Array(20);
-        endPacket[0] = 0x02; // CMD END (pvvx 风格或 SDK 风格)
-        endPacket[1] = 0xFF;
-        // 也有一些实现是发送特殊的 Index 或者直接断开
+        // 3. pvvx 结束序列 [0x02, 0xff, index_L, index_H, ~index_L, ~index_H]
+        const lastIdx = totalChunks - 1;
+        const endPacket = new Uint8Array(6);
+        endPacket[0] = 0x02;
+        endPacket[1] = 0xff;
+        endPacket[2] = lastIdx & 0xff;
+        endPacket[3] = (lastIdx >> 8) & 0xff;
+        endPacket[4] = (~lastIdx) & 0xff;
+        endPacket[5] = ((~lastIdx) >> 8) & 0xff;
+        
         await otaCharacteristic.writeValueWithoutResponse(endPacket);
 
-        addLog('OTA 传输完成！设备即将重启。', 'success');
+        addLog('OTA 传输成功！设备正在重启并应用固件...', 'success');
         progressFill.style.width = '100%';
         progressPercent.innerText = '100%';
 
@@ -152,31 +165,22 @@ async function startUpgrade() {
     }
 }
 
-// 发送单包 OTA 数据
 async function sendOtaPacket(index, chunk) {
     const packet = new Uint8Array(20);
-    
-    // Index (Little Endian)
     packet[0] = index & 0xff;
     packet[1] = (index >> 8) & 0xff;
-    
-    // Data (16 bytes)
     packet.set(chunk, 2);
     
-    // CRC-16 (Index + Data)
-    const crc = crc16_telink(packet.slice(0, 18));
+    // CRC16-Modbus (pvvx 兼容)
+    const crc = crc16_modbus(packet.slice(0, 18));
     packet[18] = crc & 0xff;
     packet[19] = (crc >> 8) & 0xff;
 
-    // 泰凌微 OTA 必须使用 Write Without Response 以提高速度
     await otaCharacteristic.writeValueWithoutResponse(packet);
-    
-    // 为了防止拥塞，可以加极短的延时（视 MTU 和连接间隔而定）
-    // await new Promise(r => setTimeout(r, 10)); 
 }
 
-// 泰凌微专用 CRC16
-function crc16_telink(data) {
+// CRC16-Modbus 算法
+function crc16_modbus(data) {
     let crc = 0xFFFF;
     for (let i = 0; i < data.length; i++) {
         crc ^= data[i];
