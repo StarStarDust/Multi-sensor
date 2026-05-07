@@ -1,38 +1,38 @@
 blueprint:
-  name: LinknLink eMotion Air 智能按键控制器
+  name: LinknLink eMotion Air Smart Button Controller
   description: |
-    专门为 eMotion Air (Zigbee版) 打造的自动化蓝图。
-    支持单击、双击、三击、长按及释放动作。
+    Automation blueprint for eMotion Air (Zigbee version).
+    Supports single, double, triple, long press, and release actions.
   domain: automation
   input:
     remote:
-      name: 选择 eMotion Air 设备
+      name: Select eMotion Air Device
       selector:
         device:
           integration: zha
           model: eMotion Air
     single_press:
-      name: 单击动作 (Single Click)
+      name: Single Press Action
       default: []
       selector:
         action: {}
     double_press:
-      name: 双击动作 (Double Click)
+      name: Double Press Action
       default: []
       selector:
         action: {}
     triple_press:
-      name: 三击动作 (Triple Click)
+      name: Triple Press Action
       default: []
       selector:
         action: {}
     long_press:
-      name: 长按动作 (Long Press)
+      name: Long Press Action (Hold)
       default: []
       selector:
         action: {}
     release:
-      name: 释放动作 (Release)
+      name: Release Action
       default: []
       selector:
         action: {}
