@@ -18,12 +18,14 @@ Home Assistant custom integration for the eMotion Air Zigbee multi-sensor. This 
 2. Click the three dots menu → **Custom repositories**
 3. Add this repository URL, select **Integration** as the category
 4. Click **Add** → Find "eMotion Air" → Click **Download**
-5. **Restart Home Assistant** (Required for the Quirk and Blueprint files to be deployed and loaded)
+5. **Restart Home Assistant twice**
+   - **First Restart**: The integration will automatically deploy the Quirk/Blueprint files and inject the necessary OTA/Quirk paths into your `configuration.yaml`.
+   - **Second Restart**: Home Assistant will then load the updated configuration and properly recognize the custom Zigbee Quirk for your device.
 
 ### Manual Installation
 
 1. Copy the `custom_components/emotionair` folder to your `/config/custom_components/` directory
-2. Restart Home Assistant
+2. Restart Home Assistant **twice** (as explained above).
 
 ## Configuration
 
@@ -38,6 +40,8 @@ Home Assistant custom integration for the eMotion Air Zigbee multi-sensor. This 
 3. It periodically checks the repository's `zigbee_firmware/version.json` file (every 6 hours) for updates.
 4. It automatically downloads the specific firmware file defined in the JSON to `/config/zigpy_ota/` when the version number increases.
 5. Your eMotion Air device will receive the update automatically during its next OTA query, and its advanced button features will be parsed by the injected Quirk.
+6. **Note on Restarts:** Because the integration modifies your `configuration.yaml` and deploys files during its first run, a total of two restarts are required to ensure ZHA picks up the new paths and the Quirk is fully active.
+
 
 ## Device Info
 
