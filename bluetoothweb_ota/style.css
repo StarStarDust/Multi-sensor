@@ -1,0 +1,183 @@
+:root {
+    --bg-color: #0f172a;
+    --card-bg: #1e293b;
+    --text-primary: #f8fafc;
+    --text-secondary: #94a3b8;
+    --accent-color: #2dd4bf;
+    --accent-hover: #14b8a6;
+    --error-color: #f43f5e;
+    --success-color: #10b981;
+    --border-radius: 12px;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-primary);
+    line-height: 1.6;
+    display: flex;
+    justify-content: center;
+    padding: 40px 20px;
+}
+
+.container {
+    width: 100%;
+    max-width: 500px;
+}
+
+header {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+header h1 {
+    font-size: 2.5rem;
+    font-weight: 800;
+    background: linear-gradient(to right, #2dd4bf, #3b82f6);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.subtitle {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+
+.card {
+    background-color: var(--card-bg);
+    border-radius: var(--border-radius);
+    padding: 24px;
+    margin-bottom: 20px;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.status-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.status-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background-color: var(--text-secondary);
+    transition: background-color 0.3s ease;
+}
+
+.status-dot.connected { background-color: var(--success-color); box-shadow: 0 0 10px var(--success-color); }
+.status-dot.error { background-color: var(--error-color); }
+
+.device-info p {
+    font-size: 0.95rem;
+    margin-bottom: 5px;
+    color: var(--text-secondary);
+}
+
+.device-info strong {
+    color: var(--text-primary);
+}
+
+button {
+    width: 100%;
+    padding: 14px;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin-top: 20px;
+}
+
+.primary-btn {
+    background-color: var(--accent-color);
+    color: var(--bg-color);
+}
+
+.primary-btn:hover { background-color: var(--accent-hover); transform: translateY(-1px); }
+
+.secondary-btn {
+    background-color: #334155;
+    color: var(--text-primary);
+}
+
+.secondary-btn:not(:disabled):hover { background-color: #475569; }
+.secondary-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.firmware-card h3, .log-card h3 {
+    font-size: 1.1rem;
+    margin-bottom: 15px;
+    color: var(--accent-color);
+}
+
+#firmware-details p {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+}
+
+.progress-container {
+    margin-top: 25px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.progress-bar {
+    flex-grow: 1;
+    height: 8px;
+    background-color: #334155;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, #2dd4bf, #3b82f6);
+    transition: width 0.1s linear;
+}
+
+#progress-percent {
+    font-size: 0.85rem;
+    min-width: 35px;
+    font-weight: bold;
+}
+
+.log-view {
+    height: 150px;
+    background-color: #0f172a;
+    border-radius: 8px;
+    padding: 12px;
+    font-family: 'Monaco', 'Consolas', monospace;
+    font-size: 0.8rem;
+    overflow-y: auto;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.log-entry { margin-bottom: 4px; }
+.log-entry.system { color: #60a5fa; }
+.log-entry.success { color: #4ade80; }
+.log-entry.error { color: #f87171; }
+
+footer {
+    text-align: center;
+    margin-top: 30px;
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.2); opacity: 0.7; }
+    100% { transform: scale(1); opacity: 1; }
+}

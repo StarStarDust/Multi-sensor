@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>eMotion Air - 蓝牙固件升级工具</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>eMotion Air</h1>
+            <p class="subtitle">蓝牙 Web OTA 升级工具</p>
+        </header>
+
+        <main>
+            <section class="card device-card">
+                <div class="status-header">
+                    <span id="connection-status" class="status-dot"></span>
+                    <span id="status-text">未连接</span>
+                </div>
+                <div class="device-info">
+                    <p>目标设备: <strong id="target-device-name">eMotion Air</strong></p>
+                    <p id="mac-address">MAC: --:--:--:--:--:--</p>
+                </div>
+                <button id="connect-btn" class="primary-btn">连接设备</button>
+            </section>
+
+            <section class="card firmware-card">
+                <h3>最新固件信息</h3>
+                <div id="firmware-details">
+                    <p>当前版本: <span id="fw-version">正在加载...</span></p>
+                    <p>文件名: <span id="fw-filename">--</span></p>
+                </div>
+                <div class="progress-container" id="progress-container" style="display: none;">
+                    <div class="progress-bar">
+                        <div id="progress-fill" class="progress-fill"></div>
+                    </div>
+                    <span id="progress-percent">0%</span>
+                </div>
+                <button id="upgrade-btn" class="secondary-btn" disabled>开始升级</button>
+            </section>
+
+            <section class="card log-card">
+                <h3>运行日志</h3>
+                <div id="log-view" class="log-view">
+                    <p class="log-entry system">系统就绪，请连接设备。</p>
+                </div>
+            </section>
+        </main>
+
+        <footer>
+            <p>&copy; 2026 StarStarDust. Powered by Web Bluetooth API.</p>
+        </footer>
+    </div>
+    <script src="ota.js"></script>
+</body>
+</html>
