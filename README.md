@@ -42,6 +42,25 @@ Home Assistant custom integration for the eMotion Air Zigbee multi-sensor. This 
 5. Your eMotion Air device will receive the update automatically during its next OTA query, and its advanced button features will be parsed by the injected Quirk.
 6. **Note on Restarts:** Because the integration modifies your `configuration.yaml` and deploys files during its first run, a total of two restarts are required to ensure ZHA picks up the new paths and the Quirk is fully active.
 
+## Firmware Updates
+
+eMotion Air uses **concurrent Zigbee + Bluetooth dual-stack firmware**, meaning the features and performance are identical regardless of which protocol you use to update. We provide two update methods to suit different scenarios:
+
+### 1. Automatic Update (via Zigbee)
+If your device is already paired with Home Assistant via ZHA, updates are handled **automatically**. This integration periodically checks for new firmware and downloads the `.zigbee` package to your local OTA directory. Your device will then update itself automatically during its next check-in.
+
+### 2. Manual Update (via Bluetooth Web Tool)
+If you prefer to trigger an update manually, or if the device is not yet paired via Zigbee, you can use our web-based tool to push the `.bin` firmware file via Bluetooth (BLE).
+
+👉 **[Launch eMotion Air Web OTA Tool](https://starstardust.github.io/Multi-sensor/bluetoothweb_ota/)**
+
+**How to upgrade:**
+1. Open the tool link in a modern browser (Chrome, Edge, or Opera).
+2. **Wake up the device**: Press the physical button on your eMotion Air sensor to ensure it is advertising via Bluetooth.
+3. Click **Connect Device** and select "eMotion Air" from the list.
+4. Once connected, click **Start Upgrade** to begin the transmission.
+
+
 
 ## Device Info
 

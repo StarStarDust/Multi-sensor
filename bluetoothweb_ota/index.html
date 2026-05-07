@@ -21,25 +21,69 @@
                 </div>
                 <div class="device-info">
                     <p>目标设备: <strong id="target-device-name">eMotion Air</strong></p>
-                    <p id="mac-address">MAC: --:--:--:--:--:--</p>
+                    <p>设备版本: <span id="current-device-version">--</span></p>
+                    <div class="key-box">
+                        <p>AES Key: <code id="aes-key-val">未读取</code></p>
+                        <button id="read-key-btn" class="mini-btn">读取 Key</button>
+                    </div>
                 </div>
                 <button id="connect-btn" class="primary-btn">连接设备</button>
             </section>
 
-            <section class="card firmware-card">
-                <h3>最新固件信息</h3>
-                <div id="firmware-details">
-                    <p>当前版本: <span id="fw-version">正在加载...</span></p>
-                    <p>文件名: <span id="fw-filename">--</span></p>
-                </div>
-                <div class="progress-container" id="progress-container" style="display: none;">
-                    <div class="progress-bar">
-                        <div id="progress-fill" class="progress-fill"></div>
+            <nav class="tab-nav" id="main-nav" style="display: none;">
+                <button class="tab-btn active" data-tab="sensor">实时监控</button>
+                <button class="tab-btn" data-tab="ota">固件升级</button>
+            </nav>
+
+            <div id="tab-sensor" class="tab-pane active">
+                <section class="card sensor-card">
+                    <h3>实时传感器数据</h3>
+                    <div class="sensor-grid">
+                        <div class="sensor-item">
+                            <span class="label">温度</span>
+                            <span id="val-temp" class="value">--</span><span class="unit">°C</span>
+                        </div>
+                        <div class="sensor-item">
+                            <span class="label">湿度</span>
+                            <span id="val-hum" class="value">--</span><span class="unit">%</span>
+                        </div>
+                        <div class="sensor-item">
+                            <span class="label">亮度</span>
+                            <span id="val-lux" class="value">--</span><span class="unit">lux</span>
+                        </div>
+                        <div class="sensor-item">
+                            <span class="label">电量</span>
+                            <span id="val-bat" class="value">--</span><span class="unit">%</span>
+                        </div>
+                        <div class="sensor-item">
+                            <span class="label">人体状态</span>
+                            <span id="val-motion" class="value">--</span>
+                        </div>
+                        <div class="sensor-item">
+                            <span class="label">最近按键</span>
+                            <span id="val-button" class="value">--</span>
+                        </div>
                     </div>
-                    <span id="progress-percent">0%</span>
-                </div>
-                <button id="upgrade-btn" class="secondary-btn" disabled>开始升级</button>
-            </section>
+                </section>
+            </div>
+
+            <div id="tab-ota" class="tab-pane">
+                <section class="card firmware-card">
+                    <h3>最新固件信息</h3>
+                    <div id="firmware-details">
+                        <p>设备当前版本: <span id="device-ota-version" style="color: var(--accent-color); font-weight: bold;">--</span></p>
+                        <p>云端最新版本: <span id="fw-version">正在加载...</span></p>
+                        <p>固件文件名: <span id="fw-filename">--</span></p>
+                    </div>
+                    <div class="progress-container" id="progress-container" style="display: none;">
+                        <div class="progress-bar">
+                            <div id="progress-fill" class="progress-fill"></div>
+                        </div>
+                        <span id="progress-percent">0%</span>
+                    </div>
+                    <button id="upgrade-btn" class="secondary-btn" disabled>开始升级</button>
+                </section>
+            </div>
 
             <section class="card log-card">
                 <h3>运行日志</h3>

@@ -114,10 +114,117 @@ button {
 .secondary-btn:not(:disabled):hover { background-color: #475569; }
 .secondary-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
-.firmware-card h3, .log-card h3 {
+.firmware-card h3, .sensor-card h3, .log-card h3 {
     font-size: 1.1rem;
     margin-bottom: 15px;
     color: var(--accent-color);
+}
+
+.tab-nav {
+    display: flex;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 4px;
+    border-radius: 12px;
+    margin-bottom: 20px;
+    gap: 4px;
+}
+
+.tab-btn {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    padding: 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.tab-btn.active {
+    background: var(--accent-color);
+    color: white;
+}
+
+.tab-pane {
+    display: none;
+}
+
+.tab-pane.active {
+    display: block;
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.key-box {
+    margin-top: 12px;
+    padding: 8px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    border: 1px dashed rgba(255, 255, 255, 0.1);
+}
+
+.key-box p {
+    font-size: 0.85rem !important;
+    margin-bottom: 8px !important;
+}
+
+#aes-key-val {
+    font-family: 'Courier New', Courier, monospace;
+    color: var(--accent-color);
+    word-break: break-all;
+}
+
+.mini-btn {
+    background: #475569;
+    color: white;
+    border: none;
+    padding: 4px 12px;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.mini-btn:hover {
+    background: #64748b;
+}
+
+.sensor-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+}
+
+.sensor-item {
+    background: rgba(255, 255, 255, 0.03);
+    padding: 12px;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+}
+
+.sensor-item .label {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    margin-bottom: 4px;
+}
+
+.sensor-item .value {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--accent-color);
+}
+
+.sensor-item .unit {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    margin-left: 4px;
 }
 
 #firmware-details p {

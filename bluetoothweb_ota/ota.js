@@ -1,9 +1,20 @@
-// pvvx / Telink Standard OTA UUIDs
+// Telink OTA & SPP UUIDs
+const GENERIC_ACCESS_SERVICE_UUID = '00001800-0000-1000-8000-00805f9b34fb';
+const DEVICE_NAME_UUID = '00002a00-0000-1000-8000-00805f9b34fb';
+const FIRMWARE_VER_UUID = '00002a26-0000-1000-8000-00805f9b34fb';
+const DEVICE_INFO_SERVICE_UUID = '0000180a-0000-1000-8000-00805f9b34fb';
+const AES_KEY_UUID = '00010203-0405-0607-0809-0a0b0c0d2b14';
+
 const TELINK_OTA_SERVICE_UUID = '00010203-0405-0607-0809-0a0b0c0d1912';
-const TELINK_OTA_CHARACTERISTIC_UUID = '00010203-0405-0607-0809-0a0b0c0d2b12'; // 修正为 2b12
+const TELINK_OTA_CHARACTERISTIC_UUID = '00010203-0405-0607-0809-0a0b0c0d2b12';
+const TELINK_SPP_SERVICE_UUID = '00010203-0405-0607-0809-0a0b0c0d1910';
+const TELINK_SPP_S2C_UUID = '00010203-0405-0607-0809-0a0b0c0d2b10';
+const TELINK_SPP_C2S_UUID = '00010203-0405-0607-0809-0a0b0c0d2b11';
 
 let bluetoothDevice = null;
 let otaCharacteristic = null;
+let sppS2CCharacteristic = null;
+let sppC2SCharacteristic = null;
 let firmwareBuffer = null;
 let latestFirmwareInfo = null;
 
@@ -18,6 +29,43 @@ const progressContainer = document.getElementById('progress-container');
 const progressFill = document.getElementById('progress-fill');
 const progressPercent = document.getElementById('progress-percent');
 const logView = document.getElementById('log-view');
+const mainNav = document.getElementById('main-nav');
+const readKeyBtn = document.getElementById('read-key-btn');
+const aesKeyVal = document.getElementById('aes-key-val');
+
+// Tab Switching Logic
+document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.onclick = () => {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById(`tab-${btn.dataset.tab}`).classList.add('active');
+    };
+});
+
+// AES Key 读取逻辑
+async function onReadKeyClick() {
+    if (!bluetoothDevice || !bluetoothDevice.gatt.connected) {
+        addLog('请先连接设备', 'error');
+        return;
+    }
+    try {
+        addLog('正在读取 AES CCM Key...', 'system');
+        const service = await bluetoothDevice.gatt.getPrimaryService(DEVICE_INFO_SERVICE_UUID);
+        const char = await service.getCharacteristic(AES_KEY_UUID);
+        const val = await char.readValue();
+        
+        // 转换为紧凑的 HEX 字符串（无空格）
+        const hex = Array.from(new Uint8Array(val.buffer))
+            .map(b => b.toString(16).padStart(2, '0'))
+            .join('');
+        
+        aesKeyVal.innerText = hex.toUpperCase();
+        addLog('AES Key 读取成功', 'success');
+    } catch (error) {
+        addLog(`读取 Key 失败: ${error.message}`, 'error');
+    }
+}
 
 // 初始加载：获取固件版本
 async function loadFirmwareInfo() {
@@ -42,13 +90,19 @@ async function loadFirmwareInfo() {
 // 蓝牙连接
 async function onConnectClick() {
     try {
-        addLog('正在扫描设备 "eMotion Air"...', 'system');
+        addLog('正在扫描以 "eMotion Air" 开头的设备...', 'system');
         bluetoothDevice = await navigator.bluetooth.requestDevice({
-            filters: [{ name: 'eMotion Air' }],
-            optionalServices: [TELINK_OTA_SERVICE_UUID]
+            filters: [{ namePrefix: 'eMotion Air' }],
+            optionalServices: [
+                GENERIC_ACCESS_SERVICE_UUID, 
+                DEVICE_INFO_SERVICE_UUID, 
+                TELINK_OTA_SERVICE_UUID, 
+                TELINK_SPP_SERVICE_UUID
+            ]
         });
 
         bluetoothDevice.addEventListener('gattserverdisconnected', onDisconnected);
+        readKeyBtn.onclick = onReadKeyClick;
 
         addLog(`已选择设备: ${bluetoothDevice.name}`, 'system');
         statusText.innerText = '正在连接...';
@@ -57,11 +111,66 @@ async function onConnectClick() {
         addLog('GATT 已连接，等待连接稳定...', 'system');
         await new Promise(r => setTimeout(r, 500));
 
-        addLog('正在发现服务...', 'system');
-        const service = await server.getPrimaryService(TELINK_OTA_SERVICE_UUID);
-        otaCharacteristic = await service.getCharacteristic(TELINK_OTA_CHARACTERISTIC_UUID);
+        addLog('正在同步设备状态...', 'system');
+        
+        // 1. 读取基础设备信息 (0x1800)
+        try {
+            const gapService = await server.getPrimaryService(GENERIC_ACCESS_SERVICE_UUID);
+            
+            // 读取名称
+            try {
+                const nameChar = await gapService.getCharacteristic(DEVICE_NAME_UUID);
+                const nameVal = await nameChar.readValue();
+                const deviceName = new TextDecoder().decode(nameVal).replace(/[^\x20-\x7E]/g, '').trim();
+                document.getElementById('target-device-name').innerText = deviceName;
+                addLog(`设备名称: ${deviceName}`, 'system');
+            } catch (e) { addLog('读取设备名称失败', 'error'); }
 
-        addLog('OTA 服务就绪 (pvvx 兼容模式)', 'success');
+            // 读取版本 (增加容错，因为固件中 0x2A26 的句柄可能定义错误)
+            try {
+                const fwChar = await gapService.getCharacteristic(FIRMWARE_VER_UUID);
+                const fwVal = await fwChar.readValue();
+                const fwVer = new TextDecoder().decode(fwVal).replace(/[^\x20-\x7E]/g, '').trim();
+                document.getElementById('current-device-version').innerText = fwVer;
+                document.getElementById('device-ota-version').innerText = fwVer;
+                addLog(`设备固件版本: ${fwVer}`, 'system');
+            } catch (e) {
+                addLog('固件版本读取受限 (UUID 0x2A26 未就绪)', 'system');
+                document.getElementById('current-device-version').innerText = '未知';
+            }
+        } catch (gapError) {
+            addLog('无法访问基础信息服务', 'system');
+        }
+
+        // 2. 获取 OTA 特征值
+        const otaService = await server.getPrimaryService(TELINK_OTA_SERVICE_UUID);
+        otaCharacteristic = await otaService.getCharacteristic(TELINK_OTA_CHARACTERISTIC_UUID);
+        
+        // 3. 获取 SPP 数据并开启通知
+        try {
+            const sppService = await server.getPrimaryService(TELINK_SPP_SERVICE_UUID);
+            
+            addLog('正在同步初始传感器状态...', 'system');
+            await new Promise(r => setTimeout(r, 1000));
+
+            // 主动读取 0x2B11 (C2S 通道)
+            sppC2SCharacteristic = await sppService.getCharacteristic(TELINK_SPP_C2S_UUID);
+            const initialData = await sppC2SCharacteristic.readValue();
+            handleSensorData({ target: { value: initialData } });
+            addLog('数据同步成功', 'success');
+
+            // 开启持续通知 (0x2B10)
+            sppS2CCharacteristic = await sppService.getCharacteristic(TELINK_SPP_S2C_UUID);
+            sppS2CCharacteristic.addEventListener('characteristicvaluechanged', handleSensorData);
+            await sppS2CCharacteristic.startNotifications();
+            addLog('实时监控通道已开启', 'success');
+            
+            mainNav.style.display = 'flex';
+        } catch (sppError) {
+            addLog(`SPP 数据初始化失败: ${sppError.message}`, 'system');
+        }
+
+        addLog('设备已就绪', 'success');
         statusText.innerText = '已连接';
         statusDot.classList.add('connected');
         connectBtn.innerText = '断开连接';
@@ -72,6 +181,50 @@ async function onConnectClick() {
         addLog(`连接失败: ${error.message}`, 'error');
         statusText.innerText = '连接错误';
         statusDot.classList.add('error');
+    }
+}
+
+// 传感器数据解析逻辑
+function handleSensorData(event) {
+    const value = event.target.value;
+    // 固件推送的是 DevData_t 结构体，长度为 15 字节
+    if (value.byteLength < 15) return;
+
+    // 解析电量 (Offset 0: ID, Offset 1: Value)
+    const battery = value.getUint8(1);
+    document.getElementById('val-bat').innerText = battery;
+
+    // 解析温度 (Offset 2: ID, Offset 3-4: Value, int16, factor 0.1)
+    const tempRaw = value.getInt16(3, true); // Little Endian
+    document.getElementById('val-temp').innerText = (tempRaw / 10).toFixed(1);
+
+    // 解析湿度 (Offset 5: ID, Offset 6: Value)
+    const humidity = value.getUint8(6);
+    document.getElementById('val-hum').innerText = humidity;
+
+    // 解析亮度 (Offset 7: ID, Offset 8-10: Value, uint24, factor 0.01)
+    const luxRaw = value.getUint8(8) | (value.getUint8(9) << 8) | (value.getUint8(10) << 16);
+    document.getElementById('val-lux').innerText = (luxRaw / 100).toFixed(0);
+
+    // 解析人体感应 (Offset 11: ID, Offset 12: Value)
+    const motion = value.getUint8(12);
+    document.getElementById('val-motion').innerText = motion === 1 ? '有人' : '无人';
+    document.getElementById('val-motion').style.color = motion === 1 ? '#f43f5e' : '#2dd4bf';
+
+    // 解析按键事件 (Offset 13: ID, Offset 14: Value)
+    const buttonEvt = value.getUint8(14);
+    const evtNames = {
+        0x00: '无',
+        0x01: '单击',
+        0x02: '双击',
+        0x03: '三击',
+        0x04: '长按',
+        0x05: '双击长按',
+        0x06: '三击长按',
+        0x80: '保持'
+    };
+    if (buttonEvt !== 0) {
+        document.getElementById('val-button').innerText = evtNames[buttonEvt] || `未知(${buttonEvt})`;
     }
 }
 
