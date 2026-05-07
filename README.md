@@ -35,8 +35,8 @@ Home Assistant custom integration for the eMotion Air Zigbee multi-sensor. This 
 
 1. Upon starting, the integration automatically injects the `zha` custom OTA and Quirk paths into your `configuration.yaml` if they don't already exist.
 2. It copies the bundled `.py` Quirks and `.yaml` Blueprints to their respective HA directories.
-3. It periodically checks the repository's `zigbee_firmware/` folder (every 6 hours) for new firmware updates.
-4. It uses ETag smart detection to download and overwrite `/config/zigpy_ota/emotionAir.zigbee` only when the file on GitHub has actually changed.
+3. It periodically checks the repository's `zigbee_firmware/version.json` file (every 6 hours) for updates.
+4. It automatically downloads the specific firmware file defined in the JSON to `/config/zigpy_ota/` when the version number increases.
 5. Your eMotion Air device will receive the update automatically during its next OTA query, and its advanced button features will be parsed by the injected Quirk.
 
 ## Device Info
