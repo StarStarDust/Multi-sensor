@@ -22,14 +22,9 @@ DOMAIN = "emotionair"
 #  Configuration - Modify according to your needs
 # ============================================================
 
-# GitHub repo info (firmware is stored in GitHub Releases assets)
-GITHUB_REPO = "StarStarDust/Multi-sensor"
-
-# GitHub API URL to fetch latest Release
-GITHUB_API_URL = f"https://api.github.com/repos/{GITHUB_REPO}/releases/latest"
-
-# Firmware matching rule (files ending in .zigbee in Release assets)
-FIRMWARE_EXTENSION = ".zigbee"
+# GitHub URLs for firmware and version tracking
+VERSION_URL = "https://raw.githubusercontent.com/StarStarDust/Multi-sensor/main/zigbee_firmware/version.json"
+FIRMWARE_BASE_URL = "https://raw.githubusercontent.com/StarStarDust/Multi-sensor/main/zigbee_firmware/"
 
 # ZHA OTA firmware storage directory
 OTA_DIR = "/config/zigpy_ota"
@@ -67,80 +62,64 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     # Define firmware check and download function
     async def check_and_download_firmware(_=None):
-        """Check GitHub Releases for new firmware and download if available."""
-        _LOGGER.info("eMotion Air: Starting firmware update check...")
+        """Check GitHub version.json for new firmware and download if available."""
+        _LOGGER.info("eMotion Air: Checking for firmware updates (JSON mode)...")
+
+        version_path = os.path.join(OTA_DIR, "emotionAir.zigbee.version")
+        local_path = os.path.join(OTA_DIR, "emotionAir.zigbee")
 
         try:
             session = async_get_clientsession(hass)
-            # 1. Get latest Release info
-            headers = {"Accept": "application/vnd.github.v3+json"}
-            async with session.get(GITHUB_API_URL, headers=headers) as resp:
+            
+            # 1. Fetch remote version.json (append random query to bypass cache)
+            import time
+            async with session.get(f"{VERSION_URL}?_={int(time.time())}") as resp:
                 if resp.status != 200:
-                    _LOGGER.error(
-                        "eMotion Air: Failed to fetch GitHub Release info, "
-                        "HTTP %s", resp.status
-                    )
+                    _LOGGER.error("eMotion Air: Failed to fetch version.json, HTTP %s", resp.status)
                     return
-                release_data = await resp.json()
-
-            release_tag = release_data.get("tag_name", "unknown")
-            assets = release_data.get("assets", [])
-
-            # 2. Find firmware files (assets ending in .zigbee)
-            firmware_assets = [
-                a for a in assets
-                if a["name"].endswith(FIRMWARE_EXTENSION)
-            ]
-
-            if not firmware_assets:
-                _LOGGER.info(
-                    "eMotion Air: No firmware file found in Release %s",
-                    release_tag
-                )
+                version_data = await resp.json(content_type=None)
+            
+            remote_version = str(version_data.get("version", ""))
+            remote_file = str(version_data.get("file", ""))
+            
+            if not remote_version or not remote_file:
+                _LOGGER.error("eMotion Air: Invalid version.json format (missing version or file)")
                 return
 
-            # 3. Check and download individually
-            for asset in firmware_assets:
-                filename = asset["name"]
-                download_url = asset["browser_download_url"]
-                local_path = os.path.join(OTA_DIR, filename)
+            # 2. Local info
+            local_path = os.path.join(OTA_DIR, remote_file)
 
-                # Skip if local file already exists
-                if await hass.async_add_executor_job(
-                    os.path.exists, local_path
-                ):
-                    _LOGGER.debug(
-                        "eMotion Air: Firmware %s already exists, skipping download",
-                        filename
-                    )
-                    continue
+            # 3. Read local version
+            local_version = ""
+            if await hass.async_add_executor_job(os.path.exists, version_path):
+                local_version = await hass.async_add_executor_job(_read_text_file, version_path)
 
-                # Download firmware
-                _LOGGER.info(
-                    "eMotion Air: Found new firmware %s (%s), starting download...",
-                    filename, release_tag
-                )
+            # 4. Compare and download
+            if remote_version == local_version and await hass.async_add_executor_job(os.path.exists, local_path):
+                _LOGGER.debug("eMotion Air: Firmware is already up to date (%s)", local_version)
+                return
 
-                async with session.get(download_url) as fw_resp:
-                    if fw_resp.status != 200:
-                        _LOGGER.error(
-                            "eMotion Air: Firmware download failed, HTTP %s",
-                            fw_resp.status
-                        )
-                        continue
+            _LOGGER.info("eMotion Air: New firmware version found: %s (%s). Downloading...", remote_version, remote_file)
+            
+            download_url = f"{FIRMWARE_BASE_URL}{remote_file}"
+            async with session.get(download_url) as fw_resp:
+                if fw_resp.status != 200:
+                    _LOGGER.error("eMotion Air: Failed to download firmware, HTTP %s", fw_resp.status)
+                    return
+                fw_data = await fw_resp.read()
 
-                    fw_data = await fw_resp.read()
+            # Write firmware and update local version file
+            await hass.async_add_executor_job(_write_firmware, local_path, fw_data)
+            await hass.async_add_executor_job(_write_text_file, version_path, remote_version)
 
-                # Write to file
-                await hass.async_add_executor_job(
-                    _write_firmware, local_path, fw_data
-                )
+            _LOGGER.info(
+                "eMotion Air: Firmware %s updated to %s successfully. "
+                "ZHA will pick this up automatically.",
+                remote_file, remote_version
+            )
 
-                _LOGGER.info(
-                    "eMotion Air: Firmware %s downloaded successfully (%d bytes). "
-                    "ZHA will pick this up automatically. No plugin update needed.",
-                    filename, len(fw_data)
-                )
+        except Exception as err:
+            _LOGGER.error("eMotion Air: Error during firmware update - %s", err)
 
         except aiohttp.ClientError as err:
             _LOGGER.error("eMotion Air: Network error - %s", err)
@@ -189,6 +168,20 @@ def _write_firmware(path: str, data: bytes):
     """Write firmware data to file."""
     with open(path, "wb") as f:
         f.write(data)
+
+
+def _write_text_file(path: str, content: str):
+    """Write text content to file."""
+    with open(path, "w", encoding="utf-8") as f:
+        f.write(content)
+
+
+def _read_text_file(path: str) -> str:
+    """Read text content from file."""
+    if not os.path.exists(path):
+        return ""
+    with open(path, "r", encoding="utf-8") as f:
+        return f.read().strip()
 
 
 def _ensure_zha_ota_config():
