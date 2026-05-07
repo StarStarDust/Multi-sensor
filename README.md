@@ -1,6 +1,6 @@
 # eMotion Air Integration
 
-[![Open your Home Assistant instance and open a repository in HACS.](https://my.home-assistant.io/badget/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=StarStarDust&repository=Multi-sensor&category=Integration)
+[![Open your Home Assistant instance and open a repository in HACS.](https://my.home-assistant.io/badge/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=StarStarDust&repository=Multi-sensor&category=Integration)
 
 Home Assistant custom integration for the eMotion Air Zigbee multi-sensor. This integration provides automatic OTA firmware updates, Zigbee Quirks for advanced button features, and Automation Blueprints.
 
